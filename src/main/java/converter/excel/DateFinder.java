@@ -45,8 +45,6 @@ public class DateFinder {
 				continue; // just skip the rows if row number is 0
 			}
 			Cell cell = nextRow.getCell(readingCol);
-			switch (cell.getCellType()) {
-			case Cell.CELL_TYPE_STRING:
 				String strDateFormat = "MM/dd/yyyy hh:mm:ss aa";
 				try {
 					Date dateBefore = new SimpleDateFormat(strDateFormat).parse(cell.getStringCellValue());
@@ -57,8 +55,6 @@ public class DateFinder {
 				} catch (ParseException e) {
 					e.printStackTrace();
 				}
-				break;
-			}
 		}
 		inputStream.close();
 		return storeDay;
