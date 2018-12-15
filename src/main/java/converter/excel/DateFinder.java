@@ -26,17 +26,19 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class DateFinder {
-	static String username=System.getProperty("user.name");
+	String username = System.getProperty("user.name");
+	String pathPrefix = "C:/Users/" + username + "/Desktop/";
+	String extension = ".xlsx";
+	String fileName;
+	String path;
 
-	public static ArrayList<Integer> readExcel(int sheet, int readingCol, String fileName) throws IOException {
-		ArrayList<Integer> storeDay = new ArrayList<>();
-		String pathPrefix = "C:/Users/"+username+"/Desktop/";
-		String extension = ".xlsx";
-		String path = pathPrefix + fileName + extension;
+	public ArrayList<CRDate> readExcel() throws IOException {
+		ArrayList<CRDate> storeDay = new ArrayList<>();
+
 		FileInputStream inputStream = new FileInputStream(new File(path));
 
 		Workbook workbook = new XSSFWorkbook(inputStream);
-		Sheet firstSheet = workbook.getSheetAt(sheet);
+		Sheet firstSheet = workbook.getSheetAt(0);
 		Iterator<Row> iterator = firstSheet.iterator();
 
 		while (iterator.hasNext()) {
@@ -44,39 +46,55 @@ public class DateFinder {
 			if (nextRow.getRowNum() == 0) {
 				continue; // just skip the rows if row number is 0
 			}
-			Cell cell = nextRow.getCell(readingCol);
-				String strDateFormat = "MM/dd/yyyy hh:mm:ss aa";
-				try {
-					Date dateBefore = new SimpleDateFormat(strDateFormat).parse(cell.getStringCellValue());
-					Date dateAfter = new Date();
-					long difference = dateAfter.getTime() - dateBefore.getTime();
-					int daysBetween = (int) (difference / (1000 * 60 * 60 * 24));
-					storeDay.add(daysBetween);
-				} catch (ParseException e) {
-					e.printStackTrace();
-				}
+			String strDateFormat = "MM/dd/yy hh:mm:ss aa";
+			Date dateBefore = null;
+			Date dateAfter = null;
+			Date dateAfterResolved = null;
+			Cell createdDateCell = nextRow.getCell(1);
+			try {
+				dateBefore = new SimpleDateFormat(strDateFormat).parse(createdDateCell.getStringCellValue());
+			} catch (ParseException e) {
+				continue;
+			}
+			Cell closedDateCell = nextRow.getCell(2);
+			try {
+				dateAfter = new SimpleDateFormat(strDateFormat).parse(closedDateCell.getStringCellValue());
+			} catch (ParseException e) {
+				dateAfter = new Date();
+			}
+			Cell resolvedDateCell = nextRow.getCell(3);
+			try {
+				dateAfterResolved = new SimpleDateFormat(strDateFormat).parse(resolvedDateCell.getStringCellValue());
+			} catch (ParseException e) {
+				dateAfterResolved = new Date();
+			}
+			CRDate crd = new CRDate();
+			long closedDifference = dateAfter.getTime() - dateBefore.getTime();
+			crd.daysBetweenClosed = (int) (closedDifference / (1000 * 60 * 60 * 24));
+			long resolvedDifference = dateAfterResolved.getTime() - dateBefore.getTime();
+			crd.daysBetweenResolved = (int) (resolvedDifference / (1000 * 60 * 60 * 24));
+			crd.timeTaken = crd.daysBetweenClosed - crd.daysBetweenResolved;
+			storeDay.add(crd);
 		}
 		inputStream.close();
 		return storeDay;
 	}
 
-	static public void writeExcel(ArrayList<Integer> l1, int col, int sheet, String fileName) {
+	public void writeExcel(ArrayList<CRDate> l1) {
 
 		FileInputStream in;
 		try {
-			String pathPrefix = "C:/Users/"+username+"/Desktop/";
-			String extension = ".xlsx";
-			String path = pathPrefix + fileName + extension;
 			in = new FileInputStream(new File(path));
 			XSSFWorkbook workbook = new XSSFWorkbook(in);
-			XSSFSheet firstSheet = workbook.getSheetAt(sheet);
-
-			Iterator<Integer> i = l1.iterator();
+			XSSFSheet firstSheet = workbook.getSheetAt(0);
+			Iterator<CRDate> i = l1.iterator();
 
 			XSSFRow row2 = firstSheet.getRow(0);
 			if (row2 == null)
 				row2 = firstSheet.createRow(0);
-			Cell cell2 = row2.getCell(col, Row.CREATE_NULL_AS_BLANK);
+			Cell cell2 = row2.getCell(4, Row.CREATE_NULL_AS_BLANK);
+			Cell cell3 = row2.getCell(5, Row.CREATE_NULL_AS_BLANK);
+			Cell cell4 = row2.getCell(6, Row.CREATE_NULL_AS_BLANK);
 			/*
 			 * start styling
 			 */
@@ -90,20 +108,31 @@ public class DateFinder {
 			XSSFColor myColor = new XSSFColor(new java.awt.Color(102, 102, 153)); // Blue BG
 			style.setFillForegroundColor(myColor);
 			style.setFillPattern(CellStyle.SOLID_FOREGROUND);
-			row2.getCell(col).setCellStyle(style);
-			cell2.setCellValue("No. of Days");
+			row2.getCell(4).setCellStyle(style);
+			row2.getCell(5).setCellStyle(style);
+			row2.getCell(6).setCellStyle(style);
+			cell2.setCellValue("Closed Duration");
+			cell3.setCellValue("Resolved Duration");
+			cell4.setCellValue("Difference");
+			firstSheet.autoSizeColumn(4);
+			firstSheet.autoSizeColumn(5);
+			firstSheet.autoSizeColumn(6);
 			/*
 			 * end styling
 			 */
 			int rownum = 1;
-			int cellnum = col;
-			firstSheet.autoSizeColumn(col);
+
 			while (i.hasNext()) {
 				XSSFRow row = firstSheet.getRow(rownum++);
-				int temp = (Integer) i.next();
-				Cell cell = row.createCell(cellnum);
-				cell.setCellValue(temp);
-				System.out.println("Row : " + rownum + " inserted with value = " +temp);
+				CRDate temp = (CRDate) i.next();
+				Cell closedCell = row.createCell(4);
+				closedCell.setCellValue(temp.daysBetweenClosed);
+				Cell resolvedCell = row.createCell(5);
+				resolvedCell.setCellValue(temp.daysBetweenResolved);
+				Cell diffCell = row.createCell(6);
+				diffCell.setCellValue(temp.timeTaken);
+				System.out.println("Row : " + rownum + " inserted with value = " + temp.daysBetweenClosed + ", "
+						+ temp.daysBetweenResolved + " and " + temp.timeTaken);
 			}
 
 			in.close();
@@ -119,16 +148,14 @@ public class DateFinder {
 	public static void main(String[] args) {
 		Scanner scn = new Scanner(System.in);
 		System.out.println("Enter file name");
-		String filename = scn.nextLine();
-		System.out.println("Enter sheet no.");
-		int sheet = scn.nextInt();
-		System.out.println("Enter column to read data");
-		int readingCol = scn.nextInt();
-		System.out.println("Enter column to enter data");
-		int col = scn.nextInt();
+		DateFinder df = new DateFinder();
+		df.fileName = scn.nextLine();
+		df.path = df.pathPrefix + df.fileName + df.extension;
+		System.out.println(df.fileName);
+		System.out.println(df.path);
 		try {
-			ArrayList<Integer> al = readExcel(sheet, readingCol, filename);
-			writeExcel(al, col, sheet, filename);
+			ArrayList<CRDate> al = df.readExcel();
+			df.writeExcel(al);
 			System.err.println("Data inserted successfully");
 		} catch (IOException e) {
 			e.printStackTrace();
