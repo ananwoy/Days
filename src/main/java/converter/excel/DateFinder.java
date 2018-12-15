@@ -54,6 +54,7 @@ public class DateFinder {
 			try {
 				dateBefore = new SimpleDateFormat(strDateFormat).parse(createdDateCell.getStringCellValue());
 			} catch (ParseException e) {
+				System.err.println("Empty/invalid row found!!!");
 				continue;
 			}
 			Cell closedDateCell = nextRow.getCell(2);
@@ -156,7 +157,7 @@ public class DateFinder {
 		try {
 			ArrayList<CRDate> al = df.readExcel();
 			df.writeExcel(al);
-			System.err.println("Data inserted successfully");
+			System.err.println("\nDATA INSERTED SUCCESSFULLY");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
