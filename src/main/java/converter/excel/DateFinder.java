@@ -125,21 +125,29 @@ public class DateFinder {
 
 			while (i.hasNext()) {
 				XSSFRow row = firstSheet.getRow(rownum++);
-				CRDate temp = (CRDate) i.next();
-				Cell closedCell = row.createCell(4);
-				closedCell.setCellValue(temp.daysBetweenClosed);
-				Cell resolvedCell = row.createCell(5);
-				resolvedCell.setCellValue(temp.daysBetweenResolved);
-				Cell diffCell = row.createCell(6);
-				diffCell.setCellValue(temp.timeTaken);
-				System.out.println("Row : " + rownum + " inserted with value = " + temp.daysBetweenClosed + ", "
-						+ temp.daysBetweenResolved + " and " + temp.timeTaken);
+				if (row != null) {
+					CRDate temp = (CRDate) i.next();
+					Cell closedCell = row.createCell(4);
+					closedCell.setCellValue(temp.daysBetweenClosed);
+					Cell resolvedCell = row.createCell(5);
+					resolvedCell.setCellValue(temp.daysBetweenResolved);
+					Cell diffCell = row.createCell(6);
+					diffCell.setCellValue(temp.timeTaken);
+					System.out.println("Row : " + rownum + " inserted with value = " + temp.daysBetweenClosed + ", "
+							+ temp.daysBetweenResolved + " and " + temp.timeTaken);
+				}
 			}
 
 			in.close();
-			FileOutputStream fos = new FileOutputStream(new File(path));
-			workbook.write(fos);
-			fos.close();
+			try {
+				FileOutputStream fos = new FileOutputStream(new File(path));
+				workbook.write(fos);
+				fos.close();
+				System.err.println("\nDATA INSERTED SUCCESSFULLY");
+			} catch (Exception e3) {
+				System.err.println("WRITING FAILED. File already open.");
+			}
+
 		} catch (Exception e2) {
 			e2.printStackTrace();
 		}
@@ -157,7 +165,6 @@ public class DateFinder {
 		try {
 			ArrayList<CRDate> al = df.readExcel();
 			df.writeExcel(al);
-			System.err.println("\nDATA INSERTED SUCCESSFULLY");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
